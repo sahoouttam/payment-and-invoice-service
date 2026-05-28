@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InvoiceResponse {
+public class CreateInvoiceResponse {
     
     private Long invoiceId;
     private InvoiceStatus invoiceStatus;

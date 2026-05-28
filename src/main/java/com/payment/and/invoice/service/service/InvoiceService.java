@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.payment.and.invoice.service.dtos.request.CreateInvoiceRequest;
-import com.payment.and.invoice.service.dtos.response.InvoiceResponse;
+import com.payment.and.invoice.service.dtos.request.PaymentRequest;
+import com.payment.and.invoice.service.dtos.response.CreateInvoiceResponse;
 import com.payment.and.invoice.service.dtos.response.LineItemResponse;
+import com.payment.and.invoice.service.dtos.response.PaymentResponse;
 import com.payment.and.invoice.service.model.Business;
 import com.payment.and.invoice.service.model.Customer;
 import com.payment.and.invoice.service.model.Invoice;
@@ -35,7 +37,7 @@ public class InvoiceService {
         this.lineItemService = lineItemService;
     }
 
-    public InvoiceResponse createInvoice(CreateInvoiceRequest createInvoiceRequest) {
+    public CreateInvoiceResponse createInvoice(CreateInvoiceRequest createInvoiceRequest) {
         Business business = businessService.findBusinessById(createInvoiceRequest.getBusinessId());
         Customer customer = customerService.findCustomerByIdAndBusiness(
                                     createInvoiceRequest.getCustomerId(), business); 
@@ -54,7 +56,7 @@ public class InvoiceService {
                                             .reduce(0, Integer::sum);
         savedInvoice.setTotalCents(totalCents);
         invoiceRepository.save(savedInvoice);
-        return InvoiceResponse.builder()
+        return CreateInvoiceResponse.builder()
                             .invoiceId(invoice.getId())
                             .invoiceStatus(invoice.getInvoiceStatus())
                             .businessId(business.getId())
@@ -66,4 +68,11 @@ public class InvoiceService {
                             .lineItemResponses(lineItemResponses)
                             .build();
     }
+
+    /*public PaymentResponse processPayment(String invoiceId, 
+                                         String idempotencyKey,
+                                         PaymentRequest request,
+                                         Long businessId) {
+        Business business = businessService.findBusinessById(businessId);                                    
+    }*/
 }
