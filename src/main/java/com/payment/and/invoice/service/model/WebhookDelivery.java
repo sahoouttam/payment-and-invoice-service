@@ -37,20 +37,24 @@ public class WebhookDelivery {
     @JoinColumn(nullable = true)
     private WebhookEndpoint webhookEndpoint;
     
-    private String event;
+    @Enumerated(EnumType.STRING)
+    private WebhookEventType webhookEventType;
     
     private String payload;
-    
-    private Integer attemptCount;
-    
-    private Integer httpStatus;
-    
+
     @Enumerated(EnumType.STRING)
-    private DeliveryStatus status;
+    private WebhookDeliveryStatus webhookDeliveryStatus;
+    
+    @Builder.Default
+    private int attemptCount = 0;
     
     private LocalDateTime deliveredAt;
     
     private LocalDateTime nextAttemptAt;
+
+    private Integer lastResponseCode;
+
+    private String lastError;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

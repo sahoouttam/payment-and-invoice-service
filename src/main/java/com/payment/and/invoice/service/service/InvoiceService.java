@@ -37,7 +37,7 @@ public class InvoiceService {
         this.lineItemService = lineItemService;
     }
 
-    public CreateInvoiceResponse createInvoice(CreateInvoiceRequest createInvoiceRequest) {
+    /*public CreateInvoiceResponse createInvoice(CreateInvoiceRequest createInvoiceRequest) {
         Business business = businessService.findBusinessById(createInvoiceRequest.getBusinessId());
         Customer customer = customerService.findCustomerByIdAndBusiness(
                                     createInvoiceRequest.getCustomerId(), business); 

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.payment.and.invoice.service.dtos.request.CreateCustomerRequest;
 import com.payment.and.invoice.service.dtos.response.CustomerResponse;
+import com.payment.and.invoice.service.security.AuthenticationUtils;
 import com.payment.and.invoice.service.service.CustomerService;
 
 @RestController
@@ -29,20 +30,24 @@ public class CustomerController {
 
     @PostMapping
     public ResponseEntity<CustomerResponse> createCustomer(@RequestBody CreateCustomerRequest createCustomerRequest) {
-        CustomerResponse customerResponse = customerService.createCustomer(
+        Long businessId = AuthenticationUtils.getBusinessId();
+        CustomerResponse customerResponse = customerService.createCustomer(businessId,
                                                             createCustomerRequest);
         return new ResponseEntity<>(customerResponse, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerResponse> getCustomer(@PathVariable Long id) {
-        CustomerResponse customerResponse = customerService.findCustomerById(id);
+        Long businessId = AuthenticationUtils.getBusinessId();
+        CustomerResponse customerResponse = customerService
+                                                .findCustomerById(businessId, id);
         return new ResponseEntity<>(customerResponse, HttpStatus.OK);
     }
 
     @GetMapping
     public ResponseEntity<List<CustomerResponse>> getAllCustomers() {
-        List<CustomerResponse> customerResponses = customerService.findAllCustomers();
+        Long businessId = AuthenticationUtils.getBusinessId();
+        List<CustomerResponse> customerResponses = customerService.findAllCustomers(businessId);
         return new ResponseEntity(customerResponses, HttpStatus.OK);
     }
 }

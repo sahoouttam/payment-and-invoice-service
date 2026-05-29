@@ -41,7 +41,8 @@ public class ApiKey {
  
     private String name;
  
-    private boolean revoked;
+    @Builder.Default
+    private boolean revoked = false;
  
     private LocalDateTime revokedAt;
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.payment.and.invoice.service.dtos.request.CreateCustomerRequest;
 import com.payment.and.invoice.service.dtos.response.CustomerResponse;
-import com.payment.and.invoice.service.exception.CustomerNotFoundException;
+import com.payment.and.invoice.service.exception.NotFoundException;
 import com.payment.and.invoice.service.model.Business;
 import com.payment.and.invoice.service.model.Customer;
 import com.payment.and.invoice.service.repository.CustomerRepository;
@@ -20,14 +20,20 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerService {
     
     private final CustomerRepository customerRepository;
+    private final BusinessService businessService;
 
     @Autowired
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository,
+                           BusinessService businessService) {
         this.customerRepository = customerRepository;
+        this.businessService = businessService;
     }
 
-    public CustomerResponse createCustomer(CreateCustomerRequest createCustomerRequest) {
+    public CustomerResponse createCustomer(Long businessId, 
+                            CreateCustomerRequest createCustomerRequest) {
+        Business business = businessService.findBusinessById(businessId);                        
         Customer customer = Customer.builder()
+                                .business(business)
                                 .name(createCustomerRequest.getName())
                                 .email(createCustomerRequest.getEmail())
                                 .build();
@@ -38,32 +44,22 @@ public class CustomerService {
 
     public Customer findById(Long id) {
         return customerRepository.findById(id)
-                        .orElseThrow(() -> new CustomerNotFoundException(
+                        .orElseThrow(() -> new NotFoundException(
                             "customer is not registered"));
     }
 
-    public CustomerResponse findCustomerById(Long customerId) {
-        Customer customer = findById(customerId);
+    public CustomerResponse findCustomerById(Long businessId, Long customerId) {
+        Business business = businessService.findBusinessById(businessId);  
+        Customer customer = customerRepository.findByIdAndBusiness(
+                                    customerId, business)
+                                    .orElseThrow(() -> new NotFoundException(
+                                    "customer is not registered"));
         return mapToCustomerResponse(customer);
     }
 
-    public CustomerResponse onboardCustomer(Business business, Long customerId) {
-        Customer customer = findById(customerId);
-        customer.setBusiness(business);
-        Customer onboardedCustomer = customerRepository.save(customer);
-        log.info("Customer with id {} onboarded to business with id: {} and name: {}", 
-                customerId, business.getId(), business.getName());
-        return mapToCustomerResponse(onboardedCustomer);
-    }
-
-    public Customer findCustomerByIdAndBusiness(Long id, Business business) {
-        return customerRepository.findByIdAndBusiness(id, business)
-                        .orElseThrow(() -> new CustomerNotFoundException(
-                            "customer is not found"));
-    }
-
-    public List<CustomerResponse> findAllCustomers() {
-        return customerRepository.findAll()
+    public List<CustomerResponse> findAllCustomers(Long businessId) {
+        Business business = businessService.findBusinessById(businessId); 
+        return customerRepository.findByBusiness(business)
                             .stream()
                             .map(customer -> mapToCustomerResponse(customer))
                             .collect(Collectors.toList());
@@ -71,6 +67,7 @@ public class CustomerService {
 
     private CustomerResponse mapToCustomerResponse(Customer customer) {
         return CustomerResponse.builder()
+                    .id(customer.getId())
                     .name(customer.getName())
                     .email(customer.getEmail())
                     .build();

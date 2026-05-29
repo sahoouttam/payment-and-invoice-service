@@ -1,0 +1,13 @@
+CREATE TABLE api_keys (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    business_id BIGINT NOT NULL,
+    key_prefix VARCHAR(255),
+    key_hash VARCHAR(255),
+    name VARCHAR(255),
+    revoked BOOLEAN NOT NULL DEFAULT FALSE,  
+    revoked_at TIMESTAMP,
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_api_keys_business FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+);

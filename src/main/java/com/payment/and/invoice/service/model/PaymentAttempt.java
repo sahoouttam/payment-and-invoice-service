@@ -42,7 +42,7 @@ public class PaymentAttempt {
     private Integer amountCents;
 
     @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    private PaymentAttemptStatus paymentAttemptStatus;
 
     private String pspReference;
  

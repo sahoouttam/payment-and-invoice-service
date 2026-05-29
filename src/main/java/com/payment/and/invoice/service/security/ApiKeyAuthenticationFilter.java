@@ -1,14 +1,14 @@
-package com.payment.and.invoice.service.filter;
+package com.payment.and.invoice.service.security;
 
 import java.io.IOException;
 import java.util.Collections;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.payment.and.invoice.service.model.Business;
+import com.payment.and.invoice.service.model.ApiKey;
 import com.payment.and.invoice.service.service.ApiKeyService;
 
 import jakarta.servlet.FilterChain;
@@ -35,21 +35,28 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
         if (apiKey != null && !apiKey.isEmpty()) {
             try {
-                Business business = apiKeyService.validateApiKey(apiKey);
+                ApiKey currentApiKey = apiKeyService.validateApiKey(apiKey);
+                AuthenticationPrincipal authenticationPrincipal = 
+                            new AuthenticationPrincipal(
+                                currentApiKey.getBusiness().getId(),
+                                currentApiKey.getId()
+                            );
                 UsernamePasswordAuthenticationToken authenticationToken = 
                     new UsernamePasswordAuthenticationToken(
-                        business, apiKey, Collections.emptyList());
+                        authenticationPrincipal, null, Collections.emptyList());
                 
-                authenticationToken.setDetails(
-                    new WebAuthenticationDetailsSource()
-                            .buildDetails(request));
-                log.debug("Authenticated business: {} (ID: {})", 
-                             business.getName(), business.getId());
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
             } catch (Exception e) {
                 log.error("Error validating API key: {}", e.getMessage(), e);
             }
         }
-
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/health") || path.startsWith("/psp/");
     }
 }

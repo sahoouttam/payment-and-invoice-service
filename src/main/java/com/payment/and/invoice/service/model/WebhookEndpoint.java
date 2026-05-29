@@ -37,7 +37,7 @@ public class WebhookEndpoint {
 
     private String url;
 
-    private String secret;
+    private String description;
 
     private Boolean active;
 

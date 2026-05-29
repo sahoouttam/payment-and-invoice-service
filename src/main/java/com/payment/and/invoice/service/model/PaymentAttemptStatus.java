@@ -1,5 +1,5 @@
 package com.payment.and.invoice.service.model;
 
-public enum PaymentStatus {
+public enum PaymentAttemptStatus {
     SUCCESS, FAILED, PENDING
 }
