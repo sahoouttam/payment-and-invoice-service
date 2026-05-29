@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.payment.and.invoice.service.dtos.WebhookData;
+import com.payment.and.invoice.service.dtos.WebhookPayload;
 import com.payment.and.invoice.service.dtos.request.CreateInvoiceRequest;
 import com.payment.and.invoice.service.dtos.request.LineItemRequest;
 import com.payment.and.invoice.service.dtos.request.PSPChargeRequest;
@@ -20,6 +22,7 @@ import com.payment.and.invoice.service.model.Customer;
 import com.payment.and.invoice.service.model.Invoice;
 import com.payment.and.invoice.service.model.InvoiceStatus;
 import com.payment.and.invoice.service.model.PaymentAttemptStatus;
+import com.payment.and.invoice.service.model.WebhookEventType;
 import com.payment.and.invoice.service.repository.InvoiceRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,16 +36,19 @@ public class InvoiceService {
     private final CustomerService customerService;
     private final LineItemService lineItemService;
     private final PaymentAttemptService paymentAttemptService;
+    private final WebhookEndpointService webhookEndpointService;
 
     @Autowired
     public InvoiceService(InvoiceRepository invoiceRepository, BusinessService businessService,
             CustomerService customerService, LineItemService lineItemService,
-            PaymentAttemptService paymentAttemptService) {
+            PaymentAttemptService paymentAttemptService, 
+            WebhookEndpointService webhookEndpointService) {
         this.invoiceRepository = invoiceRepository;
         this.businessService = businessService;
         this.customerService = customerService;
         this.lineItemService = lineItemService;
         this.paymentAttemptService = paymentAttemptService;
+        this.webhookEndpointService = webhookEndpointService;
     }
 
     public CreateInvoiceResponse createInvoice(Long businessId, 
@@ -60,7 +66,7 @@ public class InvoiceService {
         Invoice savedInvoice = invoiceRepository.save(invoice);
         List<LineItemResponse> lineItemResponses = lineItemService.saveAllLineItem(
                         createInvoiceRequest.getItemRequests(), savedInvoice);
-        
+        webhookEndpointService.sendWebhook(createWebhookPayload(invoice, WebhookEventType.INVOICE_CREATED));
         return CreateInvoiceResponse.builder()
                             .invoiceId(invoice.getId())
                             .invoiceStatus(invoice.getInvoiceStatus())
@@ -93,7 +99,11 @@ public class InvoiceService {
                             new PSPChargeRequest(paymentRequest.getCardToken(), invoice.getTotalCents()));
         if (paymentAttemptResponse.getPaymentAttemptStatus() == PaymentAttemptStatus.SUCCESS) {
             invoice.setInvoiceStatus(InvoiceStatus.PAID);
+            webhookEndpointService.sendWebhook(createWebhookPayload(invoice, WebhookEventType.INVOICE_PAID));
             log.info("Invoice {} marked as PAID", invoice.getId());
+        } else if (paymentAttemptResponse.getPaymentAttemptStatus() == PaymentAttemptStatus.FAILED) {
+            webhookEndpointService.sendWebhook(createWebhookPayload(invoice, WebhookEventType.INVOICE_PAYMENT_FAILED));
+            log.info("Payment processing for Invoice {} FAILED", invoice.getId());
         }
         Invoice savedInvoice = invoiceRepository.save(invoice);
         return mapToResponse(savedInvoice, paymentAttemptResponse);
@@ -115,5 +125,21 @@ public class InvoiceService {
                     .pspReference(payAttemptResponse.getPspReference())
                     .errorMessage(payAttemptResponse.getErrorMessage())
                     .build();
+    }
+
+    private WebhookPayload createWebhookPayload(Invoice invoice, WebhookEventType eventType) {
+        WebhookData webhookData = WebhookData.builder()
+                        .invoiceId(invoice.getId())
+                        .businessId(invoice.getBusiness().getId())
+                        .customerId(invoice.getCustomer() != null ? invoice.getCustomer().getId() : null)
+                        .invoiceStatus(invoice.getInvoiceStatus())
+                        .totalCents(invoice.getTotalCents())
+                        .dueDate(invoice.getDueDate() != null ? invoice.getDueDate() : null)
+                        .build();
+        return WebhookPayload.builder()
+                        .webhookEventType(eventType)
+                        .timestamp(LocalDateTime.now())
+                        .webhookData(webhookData)
+                        .build();
     }
 }

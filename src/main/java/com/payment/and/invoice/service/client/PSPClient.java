@@ -42,9 +42,11 @@ public class PSPClient {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<PSPChargeRequest> requestEntity = new HttpEntity<>(pspChargeRequest, headers);
 
-            log.debug("Sending PSP charge request to: {}", pspConfig.getChargeEndpoint());
+            String fullUrl = pspConfig.getPspBaseUrl() + pspConfig.getChargeEndpoint();
+            log.info("Sending PSP charge request to: {}", fullUrl);
+
             ResponseEntity<PSPChargeResponse> responseEntity = restTemplate.exchange(
-                                            pspConfig.getChargeEndpoint(),
+                                            fullUrl,
                                             HttpMethod.POST,
                                             requestEntity,
                                             PSPChargeResponse.class);

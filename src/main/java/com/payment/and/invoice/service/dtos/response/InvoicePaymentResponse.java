@@ -1,7 +1,6 @@
 package com.payment.and.invoice.service.dtos.response;
 
 import com.payment.and.invoice.service.model.InvoiceStatus;
-import com.payment.and.invoice.service.model.PaymentAttemptStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

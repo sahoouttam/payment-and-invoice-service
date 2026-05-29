@@ -1,7 +1,5 @@
 package com.payment.and.invoice.service.dtos.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,11 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PSPChargeRequest {
+public class WebhookEndpointRequest {
     
-    @JsonProperty("card_token")  
-    private String cardToken;
-    
-    @JsonProperty("amount_cents") 
-    private int amountCents;
+    private String url;
+
+    private String description;
 }

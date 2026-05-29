@@ -48,6 +48,6 @@ public class CustomerController {
     public ResponseEntity<List<CustomerResponse>> getAllCustomers() {
         Long businessId = AuthenticationUtils.getBusinessId();
         List<CustomerResponse> customerResponses = customerService.findAllCustomers(businessId);
-        return new ResponseEntity(customerResponses, HttpStatus.OK);
+        return new ResponseEntity<>(customerResponses, HttpStatus.OK);
     }
 }
