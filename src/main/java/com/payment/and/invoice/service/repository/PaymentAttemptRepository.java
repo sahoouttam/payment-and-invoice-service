@@ -9,5 +9,8 @@ import com.payment.and.invoice.service.model.PaymentAttempt;
 
 @Repository
 public interface PaymentAttemptRepository extends JpaRepository<PaymentAttempt, Long> {
+    
     Optional<PaymentAttempt> findByIdempotencyKey(String idempotencyKey);
+
+    Optional<PaymentAttempt> findTopByInvoiceIdOrderByCreatedAtDesc(Long invoiceId);
 }

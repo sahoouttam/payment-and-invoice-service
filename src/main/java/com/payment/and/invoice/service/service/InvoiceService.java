@@ -7,14 +7,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.payment.and.invoice.service.dtos.request.CreateInvoiceRequest;
+import com.payment.and.invoice.service.dtos.request.LineItemRequest;
+import com.payment.and.invoice.service.dtos.request.PSPChargeRequest;
 import com.payment.and.invoice.service.dtos.request.PaymentRequest;
 import com.payment.and.invoice.service.dtos.response.CreateInvoiceResponse;
+import com.payment.and.invoice.service.dtos.response.InvoicePaymentResponse;
 import com.payment.and.invoice.service.dtos.response.LineItemResponse;
-import com.payment.and.invoice.service.dtos.response.PaymentResponse;
+import com.payment.and.invoice.service.dtos.response.PaymentAttemptResponse;
+import com.payment.and.invoice.service.exception.NotFoundException;
 import com.payment.and.invoice.service.model.Business;
 import com.payment.and.invoice.service.model.Customer;
 import com.payment.and.invoice.service.model.Invoice;
 import com.payment.and.invoice.service.model.InvoiceStatus;
+import com.payment.and.invoice.service.model.PaymentAttemptStatus;
 import com.payment.and.invoice.service.repository.InvoiceRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,35 +32,35 @@ public class InvoiceService {
     private final BusinessService businessService;
     private final CustomerService customerService;
     private final LineItemService lineItemService;
+    private final PaymentAttemptService paymentAttemptService;
 
     @Autowired
     public InvoiceService(InvoiceRepository invoiceRepository, BusinessService businessService,
-            CustomerService customerService, LineItemService lineItemService) {
+            CustomerService customerService, LineItemService lineItemService,
+            PaymentAttemptService paymentAttemptService) {
         this.invoiceRepository = invoiceRepository;
         this.businessService = businessService;
         this.customerService = customerService;
         this.lineItemService = lineItemService;
+        this.paymentAttemptService = paymentAttemptService;
     }
 
-    /*public CreateInvoiceResponse createInvoice(CreateInvoiceRequest createInvoiceRequest) {
-        Business business = businessService.findBusinessById(createInvoiceRequest.getBusinessId());
+    public CreateInvoiceResponse createInvoice(Long businessId, 
+                            CreateInvoiceRequest createInvoiceRequest) {
+        Business business = businessService.findBusinessById(businessId);
         Customer customer = customerService.findCustomerByIdAndBusiness(
                                     createInvoiceRequest.getCustomerId(), business); 
         Invoice invoice = Invoice.builder()
                                 .business(business)
                                 .customer(customer)
-                                .invoiceStatus(InvoiceStatus.DRAFT)
-                                .dueDate(LocalDateTime.now())
+                                .invoiceStatus(InvoiceStatus.OPEN)
+                                .totalCents(computeTotal(createInvoiceRequest.getItemRequests()))
+                                .dueDate(LocalDateTime.now().plusDays(30))
                                 .build();
         Invoice savedInvoice = invoiceRepository.save(invoice);
-        
         List<LineItemResponse> lineItemResponses = lineItemService.saveAllLineItem(
                         createInvoiceRequest.getItemRequests(), savedInvoice);
-        Integer totalCents = lineItemResponses.stream()
-                                            .map(response -> response.getQuantity() * response.getUnitAmountCents())
-                                            .reduce(0, Integer::sum);
-        savedInvoice.setTotalCents(totalCents);
-        invoiceRepository.save(savedInvoice);
+        
         return CreateInvoiceResponse.builder()
                             .invoiceId(invoice.getId())
                             .invoiceStatus(invoice.getInvoiceStatus())
@@ -69,10 +74,46 @@ public class InvoiceService {
                             .build();
     }
 
-    /*public PaymentResponse processPayment(String invoiceId, 
+    public InvoicePaymentResponse processPayment(Long invoiceId, 
                                          String idempotencyKey,
-                                         PaymentRequest request,
+                                         PaymentRequest paymentRequest,
                                          Long businessId) {
-        Business business = businessService.findBusinessById(businessId);                                    
-    }*/
+        Business business = businessService.findBusinessById(businessId);
+        Invoice invoice = invoiceRepository.findByIdAndBusiness(invoiceId, business)
+                                    .orElseThrow(() -> new NotFoundException(
+                                        "invoice not found"));
+        if (invoice.getInvoiceStatus() != InvoiceStatus.OPEN) {
+            throw new IllegalStateException(
+                "Invoice is not in payable state. Current: " + invoice.getInvoiceStatus());
+        }
+        PaymentAttemptResponse paymentAttemptResponse = paymentAttemptService
+                        .processPaymentAttempt(
+                            invoice, 
+                            idempotencyKey,
+                            new PSPChargeRequest(paymentRequest.getCardToken(), invoice.getTotalCents()));
+        if (paymentAttemptResponse.getPaymentAttemptStatus() == PaymentAttemptStatus.SUCCESS) {
+            invoice.setInvoiceStatus(InvoiceStatus.PAID);
+            log.info("Invoice {} marked as PAID", invoice.getId());
+        }
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+        return mapToResponse(savedInvoice, paymentAttemptResponse);
+    }
+        
+    private Integer computeTotal(List<LineItemRequest> itemRequests) {
+        return itemRequests.stream()
+                    .map(item -> item.getQuantity() * item.getUnitAmountCents())
+                    .reduce(0, Integer::sum);
+    }
+
+    private InvoicePaymentResponse mapToResponse(Invoice invoice, 
+                        PaymentAttemptResponse payAttemptResponse) {
+        return InvoicePaymentResponse.builder()
+                    .invoiceId(invoice.getId())
+                    .invoiceStatus(invoice.getInvoiceStatus())
+                    .paymentAttemptId(payAttemptResponse.getId())
+                    .totalCents(invoice.getTotalCents())
+                    .pspReference(payAttemptResponse.getPspReference())
+                    .errorMessage(payAttemptResponse.getErrorMessage())
+                    .build();
+    }
 }

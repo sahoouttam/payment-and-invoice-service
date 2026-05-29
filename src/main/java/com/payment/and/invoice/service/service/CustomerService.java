@@ -50,11 +50,14 @@ public class CustomerService {
 
     public CustomerResponse findCustomerById(Long businessId, Long customerId) {
         Business business = businessService.findBusinessById(businessId);  
-        Customer customer = customerRepository.findByIdAndBusiness(
-                                    customerId, business)
-                                    .orElseThrow(() -> new NotFoundException(
-                                    "customer is not registered"));
+        Customer customer = findCustomerByIdAndBusiness(customerId, business);
         return mapToCustomerResponse(customer);
+    }
+
+    public Customer findCustomerByIdAndBusiness(Long customerId, Business business) {
+        return customerRepository.findByIdAndBusiness(customerId, business)
+                                    .orElseThrow(() -> new NotFoundException(
+                                    "customer is not registered"));        
     }
 
     public List<CustomerResponse> findAllCustomers(Long businessId) {

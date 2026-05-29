@@ -14,7 +14,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateInvoiceRequest {
     
-    private Long businessId;
     private Long customerId;
     private LocalDateTime dueDate;
     private List<LineItemRequest> itemRequests;

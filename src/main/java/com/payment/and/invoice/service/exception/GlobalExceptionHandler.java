@@ -45,4 +45,11 @@ public class GlobalExceptionHandler {
             "IDEMPOTENCY_CONFLICT", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @ExceptionHandler(PaymentProcessingException.class)
+    public ResponseEntity<ErrorResponse> handlePaymentProcessing(PaymentProcessingException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            "IDEMPOTENCY_CONFLICT", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
 }

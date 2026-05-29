@@ -13,5 +13,5 @@ public class PSPChargeRequest {
     
     private String cardToken;
     
-    private int amountCents;
+    private Integer amountCents;
 }

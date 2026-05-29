@@ -32,14 +32,14 @@ public class PSPClient {
                 .readTimeout(Duration.ofMillis(pspConfig.getReadTimeoutMs()))
                 .build();
     }
-    public PSPChargeResponse charge(String cardToken, int amountCents) {
+    public PSPChargeResponse charge(PSPChargeRequest pspChargeRequest) {
         log.info("Initiating PSP charge for card token: {}, amount: {} cents", 
-                 maskCardToken(cardToken), amountCents);
+                 maskCardToken(pspChargeRequest.getCardToken()), 
+                 pspChargeRequest.getAmountCents());
 
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            PSPChargeRequest pspChargeRequest = new PSPChargeRequest(cardToken, amountCents);
             HttpEntity<PSPChargeRequest> requestEntity = new HttpEntity<>(pspChargeRequest, headers);
 
             log.debug("Sending PSP charge request to: {}", pspConfig.getChargeEndpoint());
@@ -57,7 +57,7 @@ public class PSPClient {
             return pspChargeResponse;
         } catch (Exception e) {
             log.error("Unexpected error processing PSP charge for card token: {}", 
-                     maskCardToken(cardToken), e);
+                     maskCardToken(pspChargeRequest.getCardToken()), e);
             throw new PSPException("Payment processing failed due to an unexpected error.", e);
         }
     }

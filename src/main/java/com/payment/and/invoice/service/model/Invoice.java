@@ -66,10 +66,4 @@ public class Invoice {
         this.lineItems.add(lineItem);
         lineItem.setInvoice(this);
     }
-
-    public Integer computeTotal() {
-        return lineItems.stream()
-                    .map(lineItem -> lineItem.getQuantity() * lineItem.getUnitAmountCents())
-                    .reduce(0, Integer::sum);
-    }
 }

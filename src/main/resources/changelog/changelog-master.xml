@@ -10,5 +10,6 @@
     <include file="changelog/changes/003_create_invoices_table.sql"/>
     <include file="changelog/changes/004_create_line_items_table.sql"/>
     <include file="changelog/changes/005_create_api_keys_table.sql"/>
+    <include file="changelog/changes/006_create_payment_attempts_table.sql"/>
 
 </databaseChangeLog>
