@@ -1,9 +1,0 @@
-{
-    "name": "mock-psp",
-    "version": "1.0.0",
-    "description": "Mock Payment Service Provider",
-    "main": "server.js",
-    "scripts": {
-      "start": "node server.js"
-    }
-  }

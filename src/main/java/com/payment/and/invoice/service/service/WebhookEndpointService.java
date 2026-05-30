@@ -1,7 +1,5 @@
 package com.payment.and.invoice.service.service;
 
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,8 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.payment.and.invoice.service.dtos.WebhookPayload;
 import com.payment.and.invoice.service.dtos.request.WebhookEndpointRequest;
+import com.payment.and.invoice.service.dtos.response.WebhookDeliveryResponse;
 import com.payment.and.invoice.service.dtos.response.WebhookEndpointResponse;
 import com.payment.and.invoice.service.exception.NotFoundException;
 import com.payment.and.invoice.service.model.Business;
@@ -29,10 +30,7 @@ public class WebhookEndpointService {
     private final WebhookEndpointRepository webhookEndpointRepository;
     private final WebhookDeliveryService webhookDeliveryService;
     private final BusinessService businessService;
-    private ObjectMapper objectMapper = new ObjectMapper();
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    private ObjectMapper objectMapper;
 
     @Autowired
     public WebhookEndpointService(WebhookEndpointRepository webhookEndpointRepository,
@@ -41,6 +39,9 @@ public class WebhookEndpointService {
         this.webhookEndpointRepository = webhookEndpointRepository;
         this.webhookDeliveryService = webhookDeliveryService;
         this.businessService = businessService;
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     public WebhookEndpointResponse registerWebhook(Long businessId, 
@@ -106,11 +107,27 @@ public class WebhookEndpointService {
                                         .attemptCount(0)
                                         .nextAttemptAt(LocalDateTime.now().plusMinutes(1))
                                         .build();
-                
+                webhookDeliveryService.attemptDelivery(webhookDelivery);
             } catch (Exception e) {
-                log.error("Failed to create webhook delivery for endpoint: {}", endpoint.getId(), e);
+                log.error("Failed to create webhook delivery for endpoint: {}", 
+                                    webhookEndpoint.getId(), e);
             }
         }
+    }
+
+    public List<WebhookEndpointResponse> findAllWebhookEndpoints(Long businessId) {
+        Business business = businessService.findBusinessById(businessId);
+        return webhookEndpointRepository.findByBusiness(business)
+                            .stream()
+                            .map(this::mapToResponse)
+                            .collect(Collectors.toList());
+    }
+
+    public List<WebhookDeliveryResponse> findAllWebhookDeliveries(Long businessId) {
+        Business business = businessService.findBusinessById(businessId);
+        List<WebhookEndpoint> webhookEndpoints = webhookEndpointRepository
+                                                        .findByBusiness(business);
+        return webhookDeliveryService.getDeliveries(webhookEndpoints);
     }
 
     private WebhookEndpointResponse mapToResponse(WebhookEndpoint webhookEndpoint) {

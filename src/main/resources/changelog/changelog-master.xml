@@ -11,5 +11,7 @@
     <include file="changelog/changes/004_create_line_items_table.sql"/>
     <include file="changelog/changes/005_create_api_keys_table.sql"/>
     <include file="changelog/changes/006_create_payment_attempts_table.sql"/>
+    <include file="changelog/changes/007_create_webhook_endpoints_table.sql"/>
+    <include file="changelog/changes/008_create_webhook_deliveries_table.sql"/>
 
 </databaseChangeLog>

@@ -132,13 +132,13 @@ public class InvoiceService {
                         .invoiceId(invoice.getId())
                         .businessId(invoice.getBusiness().getId())
                         .customerId(invoice.getCustomer() != null ? invoice.getCustomer().getId() : null)
-                        .invoiceStatus(invoice.getInvoiceStatus())
+                        .invoiceStatus(invoice.getInvoiceStatus().toString())
                         .totalCents(invoice.getTotalCents())
-                        .dueDate(invoice.getDueDate() != null ? invoice.getDueDate() : null)
+                        .dueDate(invoice.getDueDate() != null ? invoice.getDueDate().toString() : null)
                         .build();
         return WebhookPayload.builder()
                         .webhookEventType(eventType)
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(LocalDateTime.now().toString())
                         .webhookData(webhookData)
                         .build();
     }

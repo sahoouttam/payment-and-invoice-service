@@ -1,7 +1,5 @@
 package com.payment.and.invoice.service.dtos;
 
-import java.time.LocalDateTime;
-
 import com.payment.and.invoice.service.model.WebhookEventType;
 
 import lombok.AllArgsConstructor;
@@ -16,6 +14,6 @@ import lombok.NoArgsConstructor;
 public class WebhookPayload {
     
     private WebhookEventType webhookEventType;
-    private LocalDateTime timestamp;
+    private String timestamp;
     private WebhookData webhookData;
 }
